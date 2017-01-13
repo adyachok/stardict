@@ -4,51 +4,54 @@ import struct
 import types
 import gzip
 
+
 class IfoFileException(Exception):
     """Exception while parsing the .ifo file.
     Now version error in .ifo file is the only case raising this exception.
     """
-    
-    def __init__(self, description = "IfoFileException raised"):
+
+    def __init__(self, description="IfoFileException raised"):
         """Constructor from a description string.
-        
+
         Arguments:
         - `description`: a string describing the exception condition.
         """
         self._description = description
+
     def __str__(self):
         """__str__ method, return the description of exception occured.
-        
+
         """
         return self._description
 
-        
 
 class IfoFileReader(object):
     """Read infomation from .ifo file and parse the infomation a dictionary.
     The structure of the dictionary is shown below:
     {key, value}
     """
-    
+
     def __init__(self, filename):
         """Constructor from filename.
-        
+
         Arguments:
         - `filename`: the filename of .ifo file of stardict.
         May raise IfoFileException during initialization.
         """
         self._ifo = dict()
         with open(filename, "r") as ifo_file:
-            self._ifo["dict_title"] = ifo_file.readline() # dictionary title
-            line = ifo_file.readline() # version info
+            self._ifo["dict_title"] = ifo_file.readline()  # dictionary title
+            line = ifo_file.readline()  # version info
             key, equal, value = line.partition("=")
             key = key.strip()
             value = value.strip()
             # check version info, raise an IfoFileException if error encounted
             if key != "version":
-                raise IfoFileException("Version info expected in the second line of {!r:s}!".format(filename))
+                raise IfoFileException(
+                    "Version info expected in the second line of {!r:s}!".format(filename))
             if value != "2.4.2" and value != "3.0.0":
-                raise IfoFileException("Version expected to be either 2.4.2 or 3.0.0, but {!r:s} read!".format(value))
+                raise IfoFileException(
+                    "Version expected to be either 2.4.2 or 3.0.0, but {!r:s} read!".format(value))
             self._ifo[key] = value
             # read in other infomation in the file
             for line in ifo_file:
@@ -62,7 +65,7 @@ class IfoFileReader(object):
 
     def get_ifo(self, key):
         """Get configuration value.
-        
+
         Arguments:
         - `key`: configuration option name
         Return:
@@ -79,10 +82,10 @@ class IdxFileReader(object):
     The dictionary is indexed by word name, and the value is an integer or a list of integers pointing to
     the entry in the list.
     """
-    
-    def __init__(self, filename, compressed = False, index_offset_bits = 32):
+
+    def __init__(self, filename, compressed=False, index_offset_bits=32):
         """
-        
+
         Arguments:
         - `filename`: the filename of .idx file of stardict.
         - `compressed`: indicate whether the .idx file is compressed.
@@ -100,27 +103,29 @@ class IdxFileReader(object):
         self._word_idx = dict()
         self._index_idx = list()
         for word_str, word_data_offset, word_data_size, index in self:
-            self._index_idx.append((word_str, word_data_offset, word_data_size))
+            self._index_idx.append(
+                (word_str, word_data_offset, word_data_size))
             if word_str in self._word_idx:
                 if isinstance(self._word_idx[word_str], types.ListType):
-                    self._word_idx[word_str].append(len(self._index_idx)-1)
+                    self._word_idx[word_str].append(len(self._index_idx) - 1)
                 else:
-                    self._word_idx[word_str] = [self._word_idx[word_str], len(self._index_idx)-1]
+                    self._word_idx[word_str] = [self._word_idx[
+                        word_str], len(self._index_idx) - 1]
             else:
-                self._word_idx[word_str] = len(self._index_idx)-1
+                self._word_idx[word_str] = len(self._index_idx) - 1
         del self._content
         del self._index_offset_bits
         del self._index
 
     def __iter__(self):
         """Define the iterator interface.
-        
+
         """
         return self
 
     def next(self):
         """Define the iterator interface.
-        
+
         """
         if self._offset == len(self._content):
             raise StopIteration
@@ -128,16 +133,19 @@ class IdxFileReader(object):
         word_data_size = 0
         end = self._content.find("\0", self._offset)
         word_str = self._content[self._offset: end]
-        self._offset = end+1
+        self._offset = end + 1
         if self._index_offset_bits == 64:
-            word_data_offset, = struct.unpack("!I", self._content[self._offset:self._offset+8])
+            word_data_offset, = struct.unpack(
+                "!I", self._content[self._offset:self._offset + 8])
             self._offset += 8
         elif self._index_offset_bits == 32:
-            word_data_offset, = struct.unpack("!I", self._content[self._offset:self._offset+4])
+            word_data_offset, = struct.unpack(
+                "!I", self._content[self._offset:self._offset + 4])
             self._offset += 4
         else:
             raise ValueError
-        word_data_size, = struct.unpack("!I", self._content[self._offset:self._offset+4])
+        word_data_size, = struct.unpack(
+            "!I", self._content[self._offset:self._offset + 4])
         self._offset += 4
         self._index += 1
         return (word_str, word_data_offset, word_data_size, self._index)
@@ -145,20 +153,20 @@ class IdxFileReader(object):
     def get_index_by_num(self, number):
         """Get index infomation of a specified entry in .idx file by origin index.
         May raise IndexError if number is out of range.
-        
+
         Arguments:
         - `number`: the origin index of the entry in .idx file
         Return:
         A tuple in form of (word_str, word_data_offset, word_data_size)
         """
         if number >= len(self._index_idx):
-            raise IndexError("Index out of range! Acessing the {:d} index but totally {:d}".format(number, len(self._index_idx)))
+            raise IndexError("Index out of range! Acessing the {:d} index but totally {:d}".format(
+                number, len(self._index_idx)))
         return self._index_idx[number]
-
 
     def get_index_by_word(self, word_str):
         """Get index infomation of a specified word entry.
-        
+
         Arguments:
         - `word_str`: name of word entry.
         Return:
@@ -167,7 +175,7 @@ class IdxFileReader(object):
         """
         if word_str not in self._word_idx:
             return False
-        number =  self._word_idx[word_str]
+        number = self._word_idx[word_str]
         index = list()
         if isinstance(number, types.ListType):
             for n in number:
@@ -183,6 +191,7 @@ class SynFileReader(object):
     a list of integers.
 
     """
+
     def __init__(self, filename):
         """Constructor.
 
@@ -197,19 +206,21 @@ class SynFileReader(object):
             end = content.find("\0", offset)
             synonym_word = content[offset:end]
             offset = end
-            original_word_index = struct.unpack("!I", content[offset, offset+4])
+            original_word_index = struct.unpack(
+                "!I", content[offset, offset + 4])
             offset += 4
             if synonym_word in self._syn:
                 if isinstance(self._syn[synonym_word], types.ListType):
                     self._syn[synonym_word].append(original_word_index)
                 else:
-                    self._syn[synonym_word] = [self._syn[synonym_word], original_word_index]
+                    self._syn[synonym_word] = [
+                        self._syn[synonym_word], original_word_index]
             else:
                 self._syn[synonym_word] = original_word_index
 
     def get_syn(self, synonym_word):
         """
-        
+
         Arguments:
         - `synonym_word`: synonym word.
         Return:
@@ -219,14 +230,14 @@ class SynFileReader(object):
             return False
         return self._syn[synonym_word]
 
-            
+
 class DictFileReader(object):
     """Read the .dict file, store the data in memory for querying.
     """
-    
-    def __init__(self, filename, dict_ifo, dict_index, compressed = False):
+
+    def __init__(self, filename, dict_ifo, dict_index, compressed=False):
         """Constructor.
-        
+
         Arguments:
         - `filename`: filename of .dict file.
         - `dict_ifo`: IfoFileReader object.
@@ -245,7 +256,7 @@ class DictFileReader(object):
 
     def get_dict_by_word(self, word):
         """Get the word's dictionary data by it's name.
-        
+
         Arguments:
         - `word`: word name.
         Return:
@@ -266,12 +277,10 @@ class DictFileReader(object):
             else:
                 result.append(self._get_entry(size))
         return result
-            
-
 
     def get_dict_by_index(self, index):
         """Get the word's dictionary data by it's index infomation.
-        
+
         Arguments:
         - `index`: index of a word entrt in .idx file.'
         Return:
@@ -299,20 +308,23 @@ class DictFileReader(object):
                 result[type_identifier] = self._get_entry_field_size()
             read_size = self._offset - start_offset
         return result
-        
+
     def _get_entry_sametypesequence(self, size):
         start_offset = self._offset
         result = dict()
         sametypesequence = self._dict_ifo.get_ifo("sametypesequence")
         for k in range(0, len(sametypesequence)):
             if sametypesequence[k] in "mlgtxykwhnr":
-                if k == len(sametypesequence)-1:
-                    result[sametypesequence[k]] = self._get_entry_field_size(size - (self._offset - start_offset))
+                if k == len(sametypesequence) - 1:
+                    result[sametypesequence[k]] = self._get_entry_field_size(
+                        size - (self._offset - start_offset))
                 else:
-                    result[sametypesequence[k]] = self._get_entry_field_null_trail()
+                    result[sametypesequence[k]
+                           ] = self._get_entry_field_null_trail()
             elif sametypesequence[k] in "WP":
-                if k == len(sametypesequence)-1:
-                    result[sametypesequence[k]] = self._get_entry_field_size(size - (self._offset - start_offset))
+                if k == len(sametypesequence) - 1:
+                    result[sametypesequence[k]] = self._get_entry_field_size(
+                        size - (self._offset - start_offset))
                 else:
                     result[sametypesequence[k]] = self._get_entry_field_size()
         return result
@@ -320,22 +332,22 @@ class DictFileReader(object):
     def _get_entry_field_null_trail(self):
         end = self._dict_file.find("\0", self._offset)
         result = self._dict_file[self._offset:end]
-        self._offset = end+1
+        self._offset = end + 1
         return result
-        
-    def _get_entry_field_size(self, size = None):
+
+    def _get_entry_field_size(self, size=None):
         if size == None:
-            size = struct.unpack("!I", self._dict_file[self._offset:self._offset+4])
+            size = struct.unpack("!I", self._dict_file[
+                                 self._offset:self._offset + 4])
             self._offset += 4
-        result = self._dict_file[self._offset:self._offset+size]
+        result = self._dict_file[self._offset:self._offset + size]
         self._offset += size
         return result
-        
 
 
 def read_idx_file(filename):
     """
-    
+
     Arguments:
     - `filename`:
     """
@@ -345,15 +357,17 @@ def read_idx_file(filename):
     for index in range(0, len(index_file._index_idx)):
         print index, ": ", index_file.get_index_by_num(index)[0]
 
+
 def read_ifo_file(filename):
     """
-    
+
     Arguments:
     - `filename`:
     """
     ifo_file = IfoFileReader(filename)
     for key in ifo_file._ifo:
         print key, " :", ifo_file._ifo[key]
+
 
 def read_dict_info():
     """
