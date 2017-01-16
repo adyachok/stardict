@@ -403,10 +403,9 @@ def read_dict_info():
     print(dict_reader.get_dict_by_index(31933))
     print(dict_reader.get_dict_by_word("hello"))
 
-    read_ifo_file(dict_files['ifo'])
-    read_idx_file(dict_files['idx'])
+    # read_ifo_file(dict_files['ifo'])
+    # read_idx_file(dict_files['idx'])
 
-    read_idx_file()
 
 
 def read_dict_files_from(dict_dir):
