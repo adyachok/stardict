@@ -288,9 +288,6 @@ class DictFileReader(object):
             return False
         # sametypesequence = m => same type_identifier = m
         sametypesequence = self._dict_ifo.get_ifo("sametypesequence")
-        # get_entry = self._get_entry_sametypesequence if sametypesequence else self._get_entry
-        # result = [get_entry(size) for offset, size in indexes]
-
         for index in indexes:
             self._offset = index[0]
             size = index[1]
@@ -319,7 +316,7 @@ class DictFileReader(object):
             return self._get_entry(size)
 
     def _get_entry(self, size):
-        result = dict()
+        result = {}
         read_size = 0
         start_offset = self._offset
         while read_size < size:
@@ -333,7 +330,7 @@ class DictFileReader(object):
 
     def _get_entry_sametypesequence(self, size):
         start_offset = self._offset
-        result = dict()
+        result = {}
         sametypesequence = self._dict_ifo.get_ifo("sametypesequence")
         for k in range(0, len(sametypesequence)):
             if sametypesequence[k] in "mlgtxykwhnr":
@@ -362,7 +359,8 @@ class DictFileReader(object):
             size = struct.unpack("!I", self._dict_file[
                                  self._offset:self._offset + 4])
             self._offset += 4
-        result = self._dict_file[self._offset:self._offset + size]
+        result = self._dict_file[
+            self._offset:self._offset + size]
         self._offset += size
         return result
 
@@ -405,7 +403,6 @@ def read_dict_info():
 
     # read_ifo_file(dict_files['ifo'])
     # read_idx_file(dict_files['idx'])
-
 
 
 def read_dict_files_from(dict_dir):
