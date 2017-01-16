@@ -104,8 +104,8 @@ class IdxFileReader(object):
         self._offset = 0
         self._index = 0
         self._index_offset_bits = index_offset_bits
-        self._word_idx = dict()
-        self._index_idx = list()
+        self._word_idx = {}
+        self._index_idx = []
 
         # Indexing
         for word_str, word_data_offset, word_data_size, index in self:  # Call __iter__ function
@@ -141,7 +141,7 @@ class IdxFileReader(object):
             raise StopIteration
         # Read word_str => end with \0
         end = self._content.find(b'\0', self._offset)
-        word_str = str(self._content[self._offset: end])
+        word_str = self._content[self._offset: end].decode('utf-8')
         self._offset = end + 1
 
         # Read word_data_offset => 32 or 64 bits
