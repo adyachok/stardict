@@ -394,15 +394,43 @@ def read_ifo_file(filename):
 def read_dict_info():
     """
     """
-    ifo_file = "stardict-cedict-gb-2.4.2/cedict-gb.ifo"
-    idx_file = "stardict-cedict-gb-2.4.2/cedict-gb.idx"
-    dict_file = "stardict-cedict-gb-2.4.2/cedict-gb.dict.dz"
+    ifo_file = "stardict-dictd-anh-viet-2.4.2/cedict-gb.ifo"
+    idx_file = "stardict-dictd-anh-viet-2.4.2/cedict-gb.idx"
+    dict_file = "stardict-dictd-anh-viet-2.4.2/cedict-gb.dict.dz"
     ifo_reader = IfoFileReader(ifo_file)
     idx_reader = IdxFileReader(idx_file)
     dict_reader = DictFileReader(dict_file, ifo_reader, idx_reader, True)
     print(dict_reader.get_dict_by_index(31933))
     print(dict_reader.get_dict_by_word("鼻饲法"))
 
-# read_ifo_file("stardict-cedict-gb-2.4.2/cedict-gb.ifo")
-# read_idx_file("stardict-cedict-gb-2.4.2/cedict-gb.idx")
-read_dict_info()
+
+def read_files_from(dict_dir):
+    import os
+
+    if not os.path.isdir(dict_dir):
+        return False
+    dict_files = {}
+    for filename in os.listdir(dict_dir):
+        # Get real file extension
+        name = filename
+        while True:
+            name, ext = os.path.splitext(name)
+            if ext != 'dz':
+                break
+        abs_filepath = os.path.abspath(filename)
+
+        if ext == '.ifo':
+            dict_files['ifo'] = abs_filepath
+        elif ext == '.idx':
+            dict_files['idx'] = abs_filepath
+        elif ext == '.dict':
+            dict_files['dict'] = abs_filepath
+        elif ext == '.syn':
+            dict_files['syn'] = abs_filepath
+
+    return dict_files
+
+dict_dir = 'stardict-dictd-anh-viet-2.4.2'
+print(read_files_from(dict_dir))
+# abc(dict_name)
+# read_dict_info()
