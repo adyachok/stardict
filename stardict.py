@@ -3,6 +3,7 @@
 import struct
 import types
 import gzip
+import codecs
 
 
 class IfoFileException(Exception):
@@ -39,7 +40,7 @@ class IfoFileReader(object):
         May raise IfoFileException during initialization.
         """
         self._ifo = dict()
-        with open(filename, "r") as ifo_file:
+        with codecs.open(filename, "rU", encoding='utf-8') as ifo_file:
             self._ifo["dict_title"] = ifo_file.readline()  # dictionary title
             line = ifo_file.readline()  # version info
             key, equal, value = line.partition("=")
@@ -96,7 +97,7 @@ class IdxFileReader(object):
             with gzip.open(filename, "rb") as index_file:
                 self._content = index_file.read()
         else:
-            with open(filename, "r") as index_file:
+            with open(filename, "rb") as index_file:
                 self._content = index_file.read()
 
         # Init
@@ -131,17 +132,16 @@ class IdxFileReader(object):
         """
         return self
 
-    def next(self):
+    def __next__(self):
         """Define the iterator interface.
 
         """
         # EOF
         if self._offset == len(self._content):
             raise StopIteration
-
         # Read word_str => end with \0
-        end = self._content.find("\0", self._offset)
-        word_str = self._content[self._offset: end]
+        end = self._content.find(b'\0', self._offset)
+        word_str = str(self._content[self._offset: end])
         self._offset = end + 1
 
         # Read word_data_offset => 32 or 64 bits
@@ -399,7 +399,7 @@ def read_dict_info():
     ifo_reader = IfoFileReader(dict_files['ifo'])
     idx_reader = IdxFileReader(dict_files['idx'])
     dict_reader = DictFileReader(
-        dict_files['dict'], ifo_reader, idx_reader, True)
+        dict_files['dict'], ifo_reader, idx_reader, False)
     print(dict_reader.get_dict_by_index(31933))
     print(dict_reader.get_dict_by_word("hello"))
 
@@ -416,7 +416,7 @@ def read_dict_files_from(dict_dir):
         name = filename
         while True:
             name, ext = os.path.splitext(name)
-            if ext != 'dz':
+            if ext != '.dz':
                 break
         filepath = os.path.join(dirpath, filename)
 
