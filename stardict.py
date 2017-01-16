@@ -394,17 +394,17 @@ def read_ifo_file(filename):
 def read_dict_info():
     """
     """
-    ifo_file = "stardict-dictd-anh-viet-2.4.2/cedict-gb.ifo"
-    idx_file = "stardict-dictd-anh-viet-2.4.2/cedict-gb.idx"
-    dict_file = "stardict-dictd-anh-viet-2.4.2/cedict-gb.dict.dz"
-    ifo_reader = IfoFileReader(ifo_file)
-    idx_reader = IdxFileReader(idx_file)
-    dict_reader = DictFileReader(dict_file, ifo_reader, idx_reader, True)
+    dict_dir = 'stardict-dictd-anh-viet-2.4.2'
+    dict_files = read_dict_files_from(dict_dir)
+    ifo_reader = IfoFileReader(dict_files['ifo'])
+    idx_reader = IdxFileReader(dict_files['idx'])
+    dict_reader = DictFileReader(
+        dict_files['dict'], ifo_reader, idx_reader, True)
     print(dict_reader.get_dict_by_index(31933))
-    print(dict_reader.get_dict_by_word("鼻饲法"))
+    print(dict_reader.get_dict_by_word("hello"))
 
 
-def read_files_from(dict_dir):
+def read_dict_files_from(dict_dir):
     import os
 
     if not os.path.isdir(dict_dir):
@@ -417,7 +417,7 @@ def read_files_from(dict_dir):
             name, ext = os.path.splitext(name)
             if ext != 'dz':
                 break
-        abs_filepath = os.path.abspath(filename)
+        abs_filepath = os.path.abspath(os.path.join(dict_dir, filename))
 
         if ext == '.ifo':
             dict_files['ifo'] = abs_filepath
@@ -430,7 +430,5 @@ def read_files_from(dict_dir):
 
     return dict_files
 
-dict_dir = 'stardict-dictd-anh-viet-2.4.2'
-print(read_files_from(dict_dir))
-# abc(dict_name)
-# read_dict_info()
+
+read_dict_info()
