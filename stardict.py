@@ -394,7 +394,7 @@ def read_ifo_file(filename):
 def read_dict_info():
     """
     """
-    dict_dir = 'stardict-dictd-anh-viet-2.4.2'
+    dict_dir = 'stardict-dictd_anh-viet-2.4.2'
     dict_files = read_dict_files_from(dict_dir)
     ifo_reader = IfoFileReader(dict_files['ifo'])
     idx_reader = IdxFileReader(dict_files['idx'])
@@ -407,7 +407,8 @@ def read_dict_info():
 def read_dict_files_from(dict_dir):
     import os
 
-    if not os.path.isdir(dict_dir):
+    dirpath = os.path.abspath(dict_dir)
+    if not os.path.isdir(dirpath):
         return False
     dict_files = {}
     for filename in os.listdir(dict_dir):
@@ -417,16 +418,16 @@ def read_dict_files_from(dict_dir):
             name, ext = os.path.splitext(name)
             if ext != 'dz':
                 break
-        abs_filepath = os.path.abspath(os.path.join(dict_dir, filename))
+        filepath = os.path.join(dirpath, filename)
 
         if ext == '.ifo':
-            dict_files['ifo'] = abs_filepath
+            dict_files['ifo'] = filepath
         elif ext == '.idx':
-            dict_files['idx'] = abs_filepath
+            dict_files['idx'] = filepath
         elif ext == '.dict':
-            dict_files['dict'] = abs_filepath
+            dict_files['dict'] = filepath
         elif ext == '.syn':
-            dict_files['syn'] = abs_filepath
+            dict_files['syn'] = filepath
 
     return dict_files
 
