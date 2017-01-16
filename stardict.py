@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import struct
-import types
+from typing import List
 import gzip
 import codecs
 
@@ -113,7 +113,7 @@ class IdxFileReader(object):
                 (word_str, word_data_offset, word_data_size))
             if word_str in self._word_idx:
                 # List has more than 2 elements
-                if isinstance(self._word_idx[word_str], types.ListType):
+                if isinstance(self._word_idx[word_str], List):
                     self._word_idx[word_str].append(len(self._index_idx) - 1)
                 else:  # List has 2 elements
                     self._word_idx[word_str] = [self._word_idx[
@@ -195,7 +195,7 @@ class IdxFileReader(object):
             return False
         number = self._word_idx[word_str]
         index = list()
-        if isinstance(number, types.ListType):
+        if isinstance(number, List):
             for n in number:
                 index.append(self._index_idx[n][1:])
         else:
@@ -228,7 +228,7 @@ class SynFileReader(object):
                 "!I", content[offset, offset + 4])
             offset += 4
             if synonym_word in self._syn:
-                if isinstance(self._syn[synonym_word], types.ListType):
+                if isinstance(self._syn[synonym_word], List):
                     self._syn[synonym_word].append(original_word_index)
                 else:
                     self._syn[synonym_word] = [
@@ -388,7 +388,7 @@ def read_ifo_file(filename):
     """
     ifo_file = IfoFileReader(filename)
     for key in ifo_file._ifo:
-        print(key, " :", ifo_file._ifo[key])
+        print(key, ":", ifo_file._ifo[key])
 
 
 def read_dict_info():
@@ -402,6 +402,11 @@ def read_dict_info():
         dict_files['dict'], ifo_reader, idx_reader, False)
     print(dict_reader.get_dict_by_index(31933))
     print(dict_reader.get_dict_by_word("hello"))
+
+    read_ifo_file(dict_files['ifo'])
+    read_idx_file(dict_files['idx'])
+
+    read_idx_file()
 
 
 def read_dict_files_from(dict_dir):
@@ -430,6 +435,5 @@ def read_dict_files_from(dict_dir):
             dict_files['syn'] = filepath
 
     return dict_files
-
 
 read_dict_info()
