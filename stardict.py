@@ -140,7 +140,7 @@ class IdxFileReader(object):
         if self._offset == len(self._content):
             raise StopIteration
         # Read word_str => end with \0
-        end = self._content.find(b'\0', self._offset)
+        end = self._content.find(b'\x00', self._offset)
         word_str = self._content[self._offset: end].decode('utf-8')
         self._offset = end + 1
 
@@ -221,11 +221,11 @@ class SynFileReader(object):
             content = syn_file.read()
         offset = 0
         while offset < len(content):
-            end = content.find(b'\0', offset)
+            end = content.find(b'\x00', offset)
             if end == -1:
                 break
-            synonym_word = content[offset:end]
-            offset = end
+            synonym_word = content[offset:end].decode('utf-8')
+            offset = end + 1
             original_word_index, = struct.unpack(
                 "!I", content[offset:offset + 4])
             offset += 4
@@ -351,7 +351,7 @@ class DictFileReader(object):
         return result
 
     def _get_entry_field_null_trail(self):
-        end = self._dict_file.find(b'\0', self._offset)
+        end = self._dict_file.find(b'\x00', self._offset)
         result = self._dict_file[self._offset:end]
         self._offset = end + 1
         return result
