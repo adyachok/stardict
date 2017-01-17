@@ -17,19 +17,22 @@ def test(dict_dir):
         return
 
     # Test dict index
+    test_index = 0
     dict_reader = file_stream['dict']
-    for i in range(10):
-        for k, v in dict_reader.get_dict_by_index(i).items():
-            print(v.decode('utf-8', errors='ignore'))
+    for k, v in dict_reader.get_dict_by_index(test_index).items():
+        print(v.decode('utf-8', errors='ignore'))
 
     # Test dict word
+    test_word = "'cause"
     ifo_reader = file_stream['ifo']
-    definitions = dict_reader.get_dict_by_word(r"hello")
+    definitions = dict_reader.get_dict_by_word(test_word)
     for definition in definitions:
-        sametypesequence = ifo_reader.get_ifo('sametypesequence')
-        if sametypesequence:
-            print(definition[sametypesequence].decode(
-                'utf-8', errors='ignore'))
+        for k, v in definition.items():
+            print(v.decode('utf-8', errors='ignore'))
+    # Print synonym
+    syn_reader = file_stream['syn']
+    if syn_reader:
+        print(syn_reader.get_syn(test_word))
 
     # read_ifo_file(dict_files['ifo'])
     # read_idx_file(dict_files['idx'])
