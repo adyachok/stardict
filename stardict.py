@@ -369,13 +369,18 @@ def load_dict(dict_dir):
     """
     """
     filenames = get_all_filenames_in(dict_dir)
+    if not('ifo' in filenames and 'idx' in filenames and 'dict' in filenames):
+        return None
+
     ifo_reader = IfoFileReader(filenames['ifo'])
     idx_reader = IdxFileReader(filenames['idx'], compressed=filenames[
                                'idx.gz'], index_offset_bits=32)
     dict_reader = DictFileReader(
         filenames['dict'], ifo_reader, idx_reader, compressed=filenames['dict.dz'])
+    syn_reader = SynFileReader(
+        filenames['syn']) if 'syn' in filenames else None
 
-    return dict(ifo=ifo_reader, idx=idx_reader, dict=dict_reader)
+    return dict(ifo=ifo_reader, idx=idx_reader, dict=dict_reader, syn=syn_reader)
 
 
 def get_all_filenames_in(dict_dir):
