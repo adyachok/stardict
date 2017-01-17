@@ -3,7 +3,6 @@
 import struct
 from typing import List
 import gzip
-import codecs
 
 
 class IfoFileException(Exception):
@@ -40,7 +39,7 @@ class IfoFileReader(object):
         May raise IfoFileException during initialization.
         """
         self._ifo = dict()
-        with codecs.open(filename, "rU", encoding='utf-8') as ifo_file:
+        with open(filename, "rU", encoding='utf-8') as ifo_file:
             self._ifo["dict_title"] = ifo_file.readline()  # dictionary title
             line = ifo_file.readline()  # version info
             key, equal, value = line.partition("=")
@@ -221,7 +220,7 @@ class SynFileReader(object):
             content = syn_file.read()
         offset = 0
         while offset < len(content):
-            end = content.find("\0", offset)
+            end = content.find(b'\0', offset)
             synonym_word = content[offset:end]
             offset = end
             original_word_index = struct.unpack(
@@ -349,7 +348,7 @@ class DictFileReader(object):
         return result
 
     def _get_entry_field_null_trail(self):
-        end = self._dict_file.find("\0", self._offset)
+        end = self._dict_file.find(b'\0', self._offset)
         result = self._dict_file[self._offset:end]
         self._offset = end + 1
         return result
@@ -398,8 +397,17 @@ def read_dict_info():
     idx_reader = IdxFileReader(dict_files['idx'])
     dict_reader = DictFileReader(
         dict_files['dict'], ifo_reader, idx_reader, False)
-    print(dict_reader.get_dict_by_index(31933))
-    print(dict_reader.get_dict_by_word("hello"))
+
+
+    for i in range(10):
+        print(dict_reader.get_dict_by_index(i)['m'].decode('utf-8',errors='ignore'))
+
+    definitions = dict_reader.get_dict_by_word(r"'cellist")
+    for definition in definitions:
+        sametypesequence = ifo_reader.get_ifo('sametypesequence')
+        if sametypesequence:
+            print(definition[sametypesequence].decode(
+                'utf-8', errors='ignore'))
 
     # read_ifo_file(dict_files['ifo'])
     # read_idx_file(dict_files['idx'])
