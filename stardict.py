@@ -216,8 +216,8 @@ class SynFileReader(object):
         Arguments:
         - `filename`: The filename of .syn file of stardict.
         """
-        self._syn = dict()
-        with open(filename, "r") as syn_file:
+        self._syn = {}
+        with open(filename, "rb") as syn_file:
             content = syn_file.read()
         offset = 0
         while offset < len(content):
