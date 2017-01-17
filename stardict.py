@@ -222,10 +222,12 @@ class SynFileReader(object):
         offset = 0
         while offset < len(content):
             end = content.find(b'\0', offset)
+            if end == -1:
+                break
             synonym_word = content[offset:end]
             offset = end
-            original_word_index = struct.unpack(
-                "!I", content[offset, offset + 4])
+            original_word_index, = struct.unpack(
+                "!I", content[offset:offset + 4])
             offset += 4
             if synonym_word in self._syn:
                 if isinstance(self._syn[synonym_word], List):
