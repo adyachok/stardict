@@ -394,13 +394,15 @@ def read_dict_info():
     dict_dir = 'stardict-dictd_anh-viet-2.4.2'
     dict_files = read_dict_files_from(dict_dir)
     ifo_reader = IfoFileReader(dict_files['ifo'])
-    idx_reader = IdxFileReader(dict_files['idx'])
-    dict_reader = DictFileReader(
-        dict_files['dict'], ifo_reader, idx_reader, False)
+    idx_reader = IdxFileReader(dict_files['idx'], compressed=dict_files[
+                               'idx.gz'], index_offset_bits=32)
 
+    dict_reader = DictFileReader(
+        dict_files['dict'], ifo_reader, idx_reader, compressed=dict_files['dict.dz'])
 
     for i in range(10):
-        print(dict_reader.get_dict_by_index(i)['m'].decode('utf-8',errors='ignore'))
+        print(dict_reader.get_dict_by_index(i)[
+              'm'].decode('utf-8', errors='ignore'))
 
     definitions = dict_reader.get_dict_by_word(r"'cellist")
     for definition in definitions:
@@ -423,18 +425,23 @@ def read_dict_files_from(dict_dir):
     for filename in os.listdir(dict_dir):
         # Get real file extension
         name = filename
+        is_compressed = False
         while True:
             name, ext = os.path.splitext(name)
             if ext != '.dz':
                 break
+            is_compressed = True
+
         filepath = os.path.join(dirpath, filename)
 
         if ext == '.ifo':
             dict_files['ifo'] = filepath
         elif ext == '.idx':
             dict_files['idx'] = filepath
+            dict_files['idx.gz'] = is_compressed
         elif ext == '.dict':
             dict_files['dict'] = filepath
+            dict_files['dict.dz'] = is_compressed
         elif ext == '.syn':
             dict_files['syn'] = filepath
 
