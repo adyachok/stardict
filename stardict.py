@@ -388,22 +388,65 @@ def read_ifo_file(filename):
         print(key, ":", ifo_file._ifo[key])
 
 
-def read_dict_info():
+def load_dict(dict_dir):
     """
     """
-    dict_dir = 'stardict-dictd_anh-viet-2.4.2'
-    dict_files = read_dict_files_from(dict_dir)
-    ifo_reader = IfoFileReader(dict_files['ifo'])
-    idx_reader = IdxFileReader(dict_files['idx'], compressed=dict_files[
+    filenames = get_all_filenames_in(dict_dir)
+    ifo_reader = IfoFileReader(filenames['ifo'])
+    idx_reader = IdxFileReader(filenames['idx'], compressed=filenames[
                                'idx.gz'], index_offset_bits=32)
-
     dict_reader = DictFileReader(
-        dict_files['dict'], ifo_reader, idx_reader, compressed=dict_files['dict.dz'])
+        filenames['dict'], ifo_reader, idx_reader, compressed=filenames['dict.dz'])
 
+    return dict(ifo=ifo_reader, idx=idx_reader, dict=dict_reader)
+
+
+def get_all_filenames_in(dict_dir):
+    import os
+
+    dirpath = os.path.abspath(dict_dir)
+    if not os.path.isdir(dirpath):
+        return False
+
+    filenames = {}
+    for filename in os.listdir(dict_dir):
+        # Get real file extension
+        name = filename
+        is_compressed = False
+        while True:
+            name, ext = os.path.splitext(name)
+            if ext != '.dz' and ext != '.gz':
+                break
+            is_compressed = True
+
+        filepath = os.path.join(dirpath, filename)
+
+        if ext == '.ifo':
+            filenames['ifo'] = filepath
+        elif ext == '.idx':
+            filenames['idx'] = filepath
+            filenames['idx.gz'] = is_compressed
+        elif ext == '.dict':
+            filenames['dict'] = filepath
+            filenames['dict.dz'] = is_compressed
+        elif ext == '.syn':
+            filenames['syn'] = filepath
+
+    return filenames
+
+
+def main():
+    dict_dir = 'stardict-dictd_anh-viet-2.4.2'
+    file_stream = load_dict(dict_dir)
+
+    # Test dict index
+    dict_reader = file_stream['dict']
     for i in range(10):
         print(dict_reader.get_dict_by_index(i)[
               'm'].decode('utf-8', errors='ignore'))
 
+    # Test dict word
+    ifo_reader = file_stream['ifo']
     definitions = dict_reader.get_dict_by_word(r"'cellist")
     for definition in definitions:
         sametypesequence = ifo_reader.get_ifo('sametypesequence')
@@ -414,37 +457,4 @@ def read_dict_info():
     # read_ifo_file(dict_files['ifo'])
     # read_idx_file(dict_files['idx'])
 
-
-def read_dict_files_from(dict_dir):
-    import os
-
-    dirpath = os.path.abspath(dict_dir)
-    if not os.path.isdir(dirpath):
-        return False
-    dict_files = {}
-    for filename in os.listdir(dict_dir):
-        # Get real file extension
-        name = filename
-        is_compressed = False
-        while True:
-            name, ext = os.path.splitext(name)
-            if ext != '.dz':
-                break
-            is_compressed = True
-
-        filepath = os.path.join(dirpath, filename)
-
-        if ext == '.ifo':
-            dict_files['ifo'] = filepath
-        elif ext == '.idx':
-            dict_files['idx'] = filepath
-            dict_files['idx.gz'] = is_compressed
-        elif ext == '.dict':
-            dict_files['dict'] = filepath
-            dict_files['dict.dz'] = is_compressed
-        elif ext == '.syn':
-            dict_files['syn'] = filepath
-
-    return dict_files
-
-read_dict_info()
+main()
