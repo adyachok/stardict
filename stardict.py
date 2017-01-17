@@ -85,6 +85,7 @@ class IdxFileReader(object):
 
     def __init__(self, filename, compressed=False, index_offset_bits=32):
         """
+        Note: filename.dict and filename.dict.dz have different indices
 
         Arguments:
         - `filename`: the filename of .idx file of stardict.
@@ -433,5 +434,3 @@ def get_all_filenames_in(dict_dir):
             filenames['syn'] = filepath
 
     return filenames
-
-
