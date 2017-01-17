@@ -365,30 +365,6 @@ class DictFileReader(object):
         return result
 
 
-def read_idx_file(filename):
-    """
-
-    Arguments:
-    - `filename`:
-    """
-    index_file = IdxFileReader(filename)
-    for word_str in index_file._word_idx:
-        print(word_str, ": ", index_file.get_index_by_word(word_str))
-    for index in range(0, len(index_file._index_idx)):
-        print(index, ": ", index_file.get_index_by_num(index)[0])
-
-
-def read_ifo_file(filename):
-    """
-
-    Arguments:
-    - `filename`:
-    """
-    ifo_file = IfoFileReader(filename)
-    for key in ifo_file._ifo:
-        print(key, ":", ifo_file._ifo[key])
-
-
 def load_dict(dict_dir):
     """
     """
