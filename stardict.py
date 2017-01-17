@@ -112,14 +112,9 @@ class IdxFileReader(object):
             self._index_idx.append(
                 (word_str, word_data_offset, word_data_size))
             if word_str in self._word_idx:
-                # List has more than 2 elements
-                if isinstance(self._word_idx[word_str], List):
-                    self._word_idx[word_str].append(len(self._index_idx) - 1)
-                else:  # List has 2 elements
-                    self._word_idx[word_str] = [self._word_idx[
-                        word_str], len(self._index_idx) - 1]
-            else:  # Single value
-                self._word_idx[word_str] = len(self._index_idx) - 1
+                self._word_idx[word_str].append(len(self._index_idx) - 1)
+            else:
+                self._word_idx[word_str] = [len(self._index_idx) - 1]
 
         # Clean up
         del self._content
@@ -146,14 +141,14 @@ class IdxFileReader(object):
 
         # Read word_data_offset => 32 or 64 bits
         word_data_offset = 0
-        if self._index_offset_bits == 64:
-            word_data_offset, = struct.unpack(
-                "!I", self._content[self._offset:self._offset + 8])
-            self._offset += 8
-        elif self._index_offset_bits == 32:
+        if self._index_offset_bits == 32:
             word_data_offset, = struct.unpack(
                 "!I", self._content[self._offset:self._offset + 4])
             self._offset += 4
+        elif self._index_offset_bits == 64:
+            word_data_offset, = struct.unpack(
+                "!I", self._content[self._offset:self._offset + 8])
+            self._offset += 8
         else:
             raise ValueError
 
@@ -192,15 +187,12 @@ class IdxFileReader(object):
         The index infomation returned is a list of tuples, in form of [(word_data_offset, word_data_size) ...]
         """
         if word_str not in self._word_idx:
-            return False
-        number = self._word_idx[word_str]
-        index = list()
-        if isinstance(number, List):
-            for n in number:
-                index.append(self._index_idx[n][1:])
-        else:
-            index.append(self._index_idx[number][1:])
-        return index
+            return []
+        numbers = self._word_idx[word_str]
+        indexes = []
+        for number in numbers:
+            indexes.append(self._index_idx[number][1:])
+        return indexes
 
 
 class SynFileReader(object):
@@ -224,19 +216,18 @@ class SynFileReader(object):
             end = content.find(b'\x00', offset)
             if end == -1:
                 break
+
             synonym_word = content[offset:end].decode('utf-8')
             offset = end + 1
+
             original_word_index, = struct.unpack(
                 "!I", content[offset:offset + 4])
             offset += 4
+
             if synonym_word in self._syn:
-                if isinstance(self._syn[synonym_word], List):
-                    self._syn[synonym_word].append(original_word_index)
-                else:
-                    self._syn[synonym_word] = [
-                        self._syn[synonym_word], original_word_index]
+                self._syn[synonym_word].append(original_word_index)
             else:
-                self._syn[synonym_word] = original_word_index
+                self._syn[synonym_word] = [original_word_index]
 
     def get_syn(self, synonym_word):
         """
@@ -247,7 +238,7 @@ class SynFileReader(object):
         If synonym_word exists in the .syn file, return the corresponding indexes, otherwise False.
         """
         if synonym_word not in self._syn:
-            return False
+            return []
         return self._syn[synonym_word]
 
 
@@ -286,8 +277,8 @@ class DictFileReader(object):
         """
         result = []
         indexes = self._dict_index.get_index_by_word(word)
-        if indexes is False:
-            return False
+        if not indexes:
+            return result
         # sametypesequence = m => same type_identifier = m
         sametypesequence = self._dict_ifo.get_ifo("sametypesequence")
         for index in indexes:
