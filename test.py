@@ -3,7 +3,14 @@ from stardict import load_dict
 
 def test():
     dict_dir = 'stardict-dictd_anh-viet-2.4.2'
-    file_stream = load_dict(dict_dir)
+    try:
+        file_stream = load_dict(dict_dir)
+    except:
+        file_stream = None
+
+    if file_stream is None:
+        print('Load dictionary {} failed'.format(dict_dir))
+        return
 
     # Test dict index
     dict_reader = file_stream['dict']
