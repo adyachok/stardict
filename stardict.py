@@ -1,7 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import struct
-from typing import List
 import gzip
 
 
@@ -408,3 +407,18 @@ def get_all_filenames_in(dict_dir):
             filenames['syn'] = filepath
 
     return filenames
+
+
+def get_definitions(word_str, file_stream):
+
+    dict_reader = file_stream['dict']
+    definitions = dict_reader.get_dict_by_word(word_str)
+
+    syn_reader = file_stream['syn']
+    if syn_reader:
+        indexes = syn_reader.get_syn(word_str)
+        for index in indexes:
+            definition = dict_reader.get_dict_by_index(index)
+            definitions.append(definition)
+
+    return definitions

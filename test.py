@@ -1,4 +1,4 @@
-from stardict import load_dict
+from stardict import load_dict, get_definitions
 DEBUG = True
 
 
@@ -45,6 +45,15 @@ def test(dict_dir):
     # read_idx_file(dict_files['idx'])
 
 
+def test2(dict_dir):
+    file_stream = load_dict(dict_dir)
+    word_str = 'hello'
+    definitions = get_definitions(word_str, file_stream)
+    for definition in definitions:
+        for k, v in definition.items():
+            print(v.decode('utf-8', errors='ignore'))
+
+
 # dict_dir = 'stardict-dictd_anh-viet-2.4.2'
 dict_dir = 'stardict-Collins_Cobuild_5-2.4.2'
-test(dict_dir)
+test2(dict_dir)
