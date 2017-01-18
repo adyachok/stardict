@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import struct
 import gzip
+import os
 
 
 class IfoFileException(Exception):
@@ -357,68 +358,100 @@ class DictFileReader(object):
         return result
 
 
-def load_dict(dict_path):
-    filenames = get_all_filenames_in(dict_path)
-    if not filenames:
-        return None
-    if not('ifo' in filenames and 'idx' in filenames and 'dict' in filenames):
-        return None
+class Stardict():
 
-    ifo_reader = IfoFileReader(filenames['ifo'])
-    idx_reader = IdxFileReader(filenames['idx'], compressed=filenames[
-                               'idx.gz'], index_offset_bits=32)
-    dict_reader = DictFileReader(
-        filenames['dict'], ifo_reader, idx_reader, compressed=filenames['dict.dz'])
-    syn_reader = SynFileReader(
-        filenames['syn']) if 'syn' in filenames else None
+    def __init__(self, dictionaries_dirpath):
+        self._dictionary_readers = self._load_dictionaries(
+            dictionaries_dirpath)
 
-    return dict(ifo=ifo_reader, idx=idx_reader, dict=dict_reader, syn=syn_reader)
+    def _load_dictionaries(self, dictionaries_dirpath):
+        dictionaries_dirpath = os.path.abspath(dictionaries_dirpath)
+        if not os.path.isdir(dictionaries_dirpath):
+            return None
+        dictionary_readers = {}
+        for filename in os.listdir(dictionaries_dirpath):
+            if os.path.isfile(filename):
+                continue
+            dictionary_path = os.path.join(dictionaries_dirpath, filename)
+            dictionary_reader = self._load_dictionary(dictionary_path)
+            if not dictionary_reader:
+                continue
+            dictionary_readers[dictionary_reader['name']] = dictionary_reader
+        return dictionary_readers
 
+    def _load_dictionary(self, dictionary_path):
+        filepaths = self._get_dictionary_filepaths(dictionary_path)
+        if not filepaths:
+            return None
+        if not('ifo' in filepaths and 'idx' in filepaths and 'dict' in filepaths):
+            return None
 
-def get_all_filenames_in(dict_path):
-    import os
+        dictionary_name = os.path.basename(dictionary_path)
+        ifo_reader = IfoFileReader(filepaths['ifo'])
+        idx_reader = IdxFileReader(filepaths['idx'], compressed=filepaths[
+            'idx.gz'], index_offset_bits=32)
+        dict_reader = DictFileReader(
+            filepaths['dict'], ifo_reader, idx_reader, compressed=filepaths['dict.dz'])
+        syn_reader = SynFileReader(
+            filepaths['syn']) if 'syn' in filepaths else None
 
-    dirpath = os.path.abspath(dict_path)
-    if not os.path.isdir(dirpath):
-        return None
+        return dict(name=dictionary_name, ifo=ifo_reader, idx=idx_reader, dict=dict_reader, syn=syn_reader)
 
-    filenames = {}
-    for filename in os.listdir(dirpath):
-        # Get real file extension
-        name = filename
-        is_compressed = False
-        while True:
-            name, ext = os.path.splitext(name)
-            if ext != '.dz' and ext != '.gz':
-                break
-            is_compressed = True
+    def _get_dictionary_filepaths(self, dictionary_path):
+        dictionary_path = os.path.abspath(dictionary_path)
+        if not os.path.isdir(dictionary_path):
+            return None
 
-        filepath = os.path.join(dirpath, filename)
+        filepaths = {}
+        for filename in os.listdir(dictionary_path):
+            # Get real file extension
+            name = filename
+            is_compressed = False
+            while True:
+                name, ext = os.path.splitext(name)
+                if ext != '.dz' and ext != '.gz':
+                    break
+                is_compressed = True
 
-        if ext == '.ifo':
-            filenames['ifo'] = filepath
-        elif ext == '.idx':
-            filenames['idx'] = filepath
-            filenames['idx.gz'] = is_compressed
-        elif ext == '.dict':
-            filenames['dict'] = filepath
-            filenames['dict.dz'] = is_compressed
-        elif ext == '.syn':
-            filenames['syn'] = filepath
+            filepath = os.path.join(dictionary_path, filename)
 
-    return filenames
+            if ext == '.ifo':
+                filepaths['ifo'] = filepath
+            elif ext == '.idx':
+                filepaths['idx'] = filepath
+                filepaths['idx.gz'] = is_compressed
+            elif ext == '.dict':
+                filepaths['dict'] = filepath
+                filepaths['dict.dz'] = is_compressed
+            elif ext == '.syn':
+                filepaths['syn'] = filepath
 
+        return filepaths
 
-def get_definitions(word_str, file_stream):
+    def get_definitions_from_all_dictionaries(self, word_str):
+        definitions = {}
+        for dictionary_reader in self._dictionary_readers.values():
+            dictionary_definitions = self._get_definitions(
+                word_str, dictionary_reader)
+            definitions[dictionary_reader['name']] = dictionary_definitions
+        return definitions
 
-    dict_reader = file_stream['dict']
-    definitions = dict_reader.get_dict_by_word(word_str)
+    def get_definitions_from_one_dictionary(self, word_str, dictionary_name):
+        if not (dictionary_name in self._dictionary_readers):
+            return None
+        dictionary_reader = self._dictionary_readers[dictionary_name]
+        definitons = self._get_definitions(word_str, dictionary_reader)
+        return definitons
 
-    syn_reader = file_stream['syn']
-    if syn_reader:
-        indexes = syn_reader.get_syn(word_str)
-        for index in indexes:
-            definition = dict_reader.get_dict_by_index(index)
-            definitions.append(definition)
+    def _get_definitions(self, word_str, dictionary_reader):
+        dict_reader = dictionary_reader['dict']
+        definitions = dict_reader.get_dict_by_word(word_str)
 
-    return definitions
+        syn_reader = dictionary_reader['syn']
+        if syn_reader:
+            indexes = syn_reader.get_syn(word_str)
+            for index in indexes:
+                definition = dict_reader.get_dict_by_index(index)
+                definitions.append(definition)
+
+        return definitions
