@@ -1,0 +1,3 @@
+stardict-Collins_Cobuild_5-2.4.2 1 0
+stardict-dictd_anh-viet-2.4.2 1 1
+stardict-WordNet_3-2.4.2 1 2
