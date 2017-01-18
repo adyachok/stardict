@@ -357,10 +357,10 @@ class DictFileReader(object):
         return result
 
 
-def load_dict(dict_dir):
-    """
-    """
-    filenames = get_all_filenames_in(dict_dir)
+def load_dict(dict_path):
+    filenames = get_all_filenames_in(dict_path)
+    if not filenames:
+        return None
     if not('ifo' in filenames and 'idx' in filenames and 'dict' in filenames):
         return None
 
@@ -375,15 +375,15 @@ def load_dict(dict_dir):
     return dict(ifo=ifo_reader, idx=idx_reader, dict=dict_reader, syn=syn_reader)
 
 
-def get_all_filenames_in(dict_dir):
+def get_all_filenames_in(dict_path):
     import os
 
-    dirpath = os.path.abspath(dict_dir)
+    dirpath = os.path.abspath(dict_path)
     if not os.path.isdir(dirpath):
-        return False
+        return None
 
     filenames = {}
-    for filename in os.listdir(dict_dir):
+    for filename in os.listdir(dirpath):
         # Get real file extension
         name = filename
         is_compressed = False
