@@ -4,7 +4,6 @@ import struct
 import gzip
 import os
 from dictutils import find_dictionary_filepaths
-from collections import OrderedDict
 
 
 class IfoFileException(Exception):
@@ -369,172 +368,19 @@ class DictFileReader(object):
         return result
 
 
-class Stardict():
+class Dictionary():
 
-    def __init__(self, dictionary_settings):
-        self.settings = dictionary_settings
-        self._dictionary_readers = {}
-        self._load_dictionaries()
-        self._build_search_index()
-
-    def _load_dictionaries(self):
-        enabled_dictionaries = self.settings.find_enabled_dictionaries()
-        for dictionary_filename in enabled_dictionaries:
-            dictionary_path = os.path.join(
-                self.settings.dicts_dirpath, dictionary_filename)
-            self._load_dictionary(dictionary_path)
-
-    def _load_dictionary(self, dictionary_path):
-        dictionary_reader = self._get_dictionary_reader(dictionary_path)
-        if not dictionary_reader:
-            return
-        self._dictionary_readers[dictionary_reader['name']] = dictionary_reader
-
-    def _get_dictionary_reader(self, dictionary_path):
+    def __init__(self, dictionary_path):
         filepaths = find_dictionary_filepaths(dictionary_path)
         if not filepaths:
-            return None
+            print('Invalid dictionary')
+            raise ValueError
 
-        dictionary_name = os.path.basename(dictionary_path)
-        ifo_reader = IfoFileReader(filepaths['ifo'])
-        idx_reader = IdxFileReader(filepaths['idx'], compressed=filepaths[
+        self.name = os.path.basename(dictionary_path)
+        self.ifo_reader = IfoFileReader(filepaths['ifo'])
+        self.idx_reader = IdxFileReader(filepaths['idx'], compressed=filepaths[
             'idx.gz'], index_offset_bits=32)
-        dict_reader = DictFileReader(
-            filepaths['dict'], ifo_reader, idx_reader, compressed=filepaths['dict.dz'])
-        syn_reader = SynFileReader(
+        self.dict_reader = DictFileReader(
+            filepaths['dict'], self.ifo_reader, self.idx_reader, compressed=filepaths['dict.dz'])
+        self.syn_reader = SynFileReader(
             filepaths['syn']) if 'syn' in filepaths else None
-
-        return dict(name=dictionary_name, ifo=ifo_reader, idx=idx_reader, dict=dict_reader, syn=syn_reader)
-
-    def get_definitions_from_enabled_dictionaries(self,word_str, text_capture_mode=False):
-        if text_capture_mode:
-            dictionaries=self.settings.enabled_dictionaries_in_text_capture_mode
-        else:
-            dictionaries=self.settings.enabled_dictionaries_in_normal_mode
-        
-        enabled_dictionaries_definitions=OrderedDict()
-        for dictionary in dictionaries:
-            definitions = self.get_definitions_from_one_dictionary( word_str, dictionary)
-            enabled_dictionaries_definitions[dictionary]=definitions
-        return enabled_dictionaries_definitions
-
-    def get_definitions_from_one_dictionary(self, word_str, dictionary):
-        dictionary_reader = self._dictionary_readers[dictionary]
-        dict_reader = dictionary_reader['dict']
-        definitions = dict_reader.get_dict_by_word(word_str)
-
-        syn_reader = dictionary_reader['syn']
-        if syn_reader:
-            indexes = syn_reader.get_syn(word_str)
-            for index in indexes:
-                definition = dict_reader.get_dict_by_index(index)
-                definitions.append(definition)
-
-        return definitions
-
-    def install_dictionary(self, dictionary_path):
-        self.settings.install_dictionary(dictionary_path)
-        self._load_dictionary(dictionary_path)
-        self._build_search_index()
-
-    def _build_search_index(self):
-        search_index = set()
-        dictionaries = self.settings.enabled_dictionaries_in_index_group
-        for dictionary in dictionaries:
-            dictionary_reader = self._dictionary_readers[dictionary]
-            words = dictionary_reader['idx'].get_all_words()
-            search_index = search_index.union(words)
-        self.search_index = sorted(search_index)
-
-
-class DictionarySettings():
-
-    def __init__(self, dicts_dirpath, settings_dirpath):
-        self.dicts_dirpath = os.path.abspath(dicts_dirpath)
-        self.settings_dirpath = os.path.abspath(settings_dirpath)
-        self._load_settings()
-
-    def _get_installed_dictionaries_settings(self):
-        filename = 'installed_dictionaries_settings.txt'
-        filepath = os.path.join(self.settings_dirpath, filename)
-        if not os.path.exists(filepath):
-            return []
-
-        installed_dictionaries_settings = []
-        with open(filepath, mode='r', encoding='utf-8') as f:
-            for line in f:
-                setting = tuple(line.split(sep=' '))
-                installed_dictionaries_settings.append(setting)
-        return sorted(installed_dictionaries_settings, key=lambda setting: setting[2])
-
-    def _get_index_group_settings(self):
-        filename = 'index_group_settings.txt'
-        filepath = os.path.join(self.settings_dirpath, filename)
-        if not os.path.exists(filepath):
-            return []
-        index_group_settings = []
-        with open(filepath, mode='r', encoding='utf-8') as f:
-            for line in f:
-                setting = tuple(line.split(sep=' '))
-                index_group_settings.append(setting)
-        return sorted(index_group_settings, key=lambda setting: setting[2])
-
-    def _get_text_capture_group_settings(self):
-        filename = 'text_capture_group_settings.txt'
-        filepath = os.path.join(self.settings_dirpath, filename)
-        if not os.path.exists(filepath):
-            return []
-        text_capture_group_settings = []
-        with open(filepath, mode='r', encoding='utf-8') as f:
-            for line in f:
-                setting = tuple(line.split(sep=' '))
-                text_capture_group_settings.append(setting)
-        return sorted(text_capture_group_settings, key=lambda setting: setting[2])
-
-    def _load_settings(self):
-        self.installed_dictionaries_settings = self._get_installed_dictionaries_settings()
-        self.index_group_settings = self._get_index_group_settings()
-        self.text_capture_group_settings = self._get_text_capture_group_settings()
-
-        self.enabled_dictionaries_in_normal_mode=[setting[0] for setting in self.installed_dictionaries_settings if setting[1]!='0']
-        self.enabled_dictionaries_in_index_group=[setting[0] for setting in self.index_group_settings if setting[1]!='0']
-        self.enabled_dictionaries_in_text_capture_mode=[setting[0] for setting in self.text_capture_group_settings if setting[1]!='0']
-
-    def find_enabled_dictionaries(self):
-        enabled_dictionaries = set()
-        enabled_dictionaries=enabled_dictionaries.union(self.enabled_dictionaries_in_normal_mode)
-        enabled_dictionaries=enabled_dictionaries.union(self.enabled_dictionaries_in_index_group)
-        enabled_dictionaries=enabled_dictionaries.union(self.enabled_dictionaries_in_text_capture_mode)
-        return list(enabled_dictionaries)
-
-    def install_dictionary(self, dictionary_path):
-        filepaths = find_dictionary_filepaths(dictionary_path)
-        if not filepaths:
-            print('Install dictionary failed. Invalid dictionary')
-            return False
-
-        dictionary_name = os.path.basename(dictionary_path)
-        for setting in self.installed_dictionaries_settings:
-            if dictionary_name == setting[0]:
-                print('This dictionary has been already installed')
-                return False
-
-        # TODO:Move file to dicts location
-
-        order = len(self.installed_dictionaries_settings)
-        with open('./settings/installed_dictionaries_settings.txt', mode='a', encoding='utf-8') as f:
-            setting = '{} {} {}\n'.format(dictionary_name, 1, order)
-            f.write(setting)
-
-        with open('./settings/index_group_settings.txt', mode='a', encoding='utf-8') as f:
-            setting = '{} {} {}\n'.format(dictionary_name, 1, order)
-            f.write(setting)
-
-        with open('./settings/text_capture_group_settings.txt', mode='a', encoding='utf-8') as f:
-            setting = '{} {} {}\n'.format(dictionary_name, 1, order)
-            f.write(setting)
-
-        self._load_settings()
-        print('Install dictionary successfully')
-
-    
