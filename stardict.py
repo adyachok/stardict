@@ -195,6 +195,15 @@ class IdxFileReader(object):
             indexes.append(self._index_idx[number][1:])
         return indexes
 
+    def get_all_words(self):
+        """Get all words in an dictionary
+
+        Return:
+        A set of words
+        """
+
+        return {data[0] for data in self._index_idx}
+
 
 class SynFileReader(object):
     """Read infomation from .syn file and form a dictionary as below:
@@ -430,7 +439,12 @@ class Stardict():
         self._build_search_index()
 
     def _build_search_index(self):
-        pass
+        search_index = set()
+        dictionaries = self.settings.find_enabled_dictionaries_in_index_group()
+        for dictionary in dictionaries:
+            dictionary_reader = self._dictionary_readers[dictionary]
+            words = dictionary_reader['idx'].get_all_words()
+            search_index = search_index.union(words)
 
 
 class DictionarySettings():
@@ -495,6 +509,9 @@ class DictionarySettings():
                 enabled_dictionaries.add(setting[0])
         return list(enabled_dictionaries)
 
+    def find_enabled_dictionaries_in_index_group(self):
+        return [setting[0] for setting in self.index_group_settings if setting[1]]
+
     def install_dictionary(self, dictionary_path):
         filepaths = find_dictionary_filepaths(dictionary_path)
         if not filepaths:
@@ -507,8 +524,7 @@ class DictionarySettings():
                 print('This dictionary has been already installed')
                 return False
 
-        # TODO:Move file to dics location
-        # TODO:Change dictionaries settings
+        # TODO:Move file to dicts location
 
         order = len(self.installed_dictionaries_settings)
         with open('./settings/installed_dictionaries_settings.txt', mode='a', encoding='utf-8') as f:
