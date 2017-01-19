@@ -34,17 +34,21 @@ class StarDict():
 
         enabled_dictionaries_definitions = []
         for name in names:
+            if name not in self._dictionaries:
+                continue
             dictionary = self._dictionaries[name]
-            definitions = self.get_definitions(
+            definitions = self._get_definitions(
                 word_str, dictionary)
             enabled_dictionaries_definitions.append((dictionary, definitions))
         return enabled_dictionaries_definitions
 
-    def get_definitions_from_one_dictionary(self, word_str, dictionary_name):
+    def get_definitions_from_dictionary_name(self, word_str, dictionary_name):
+        if dictionary_name not in self._dictionaries:
+            return None
         dictionary = self._dictionaries[dictionary_name]
-        return self.get_definitions(word_str, dictionary)
+        return (dictionary, self._get_definitions(word_str, dictionary))
 
-    def get_definitions(self, word_str, dictionary):
+    def _get_definitions(self, word_str, dictionary):
         definitions = dictionary.dict_reader.get_dict_by_word(word_str)
         if dictionary.syn_reader:
             indexes = dictionary.syn_reader.get_syn(word_str)
@@ -63,6 +67,8 @@ class StarDict():
         search_index = set()
         names = self.settings.enabled_dictionaries_in_index_group
         for name in names:
+            if name not in self._dictionaries:
+                continue
             dictionary = self._dictionaries[name]
             words = dictionary.idx_reader.get_all_words()
             search_index = search_index.union(words)
