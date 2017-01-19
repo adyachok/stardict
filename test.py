@@ -9,10 +9,10 @@ def test(word_str):
     settings = DictionarySettings(DICTS_DIRPATH, SETTINGS_DIRPATH)
     stardict = Stardict(settings)
 
-    all_dictionaries_definitions = stardict.get_definitions_from_all_dictionaries(
+    enabled_dictionaries_definitions = stardict.get_definitions_from_enabled_dictionaries(
         word_str)
-    for dictionary_name, definitions in all_dictionaries_definitions.items():
-        print(dictionary_name)
+    for dictionary, definitions in enabled_dictionaries_definitions.items():
+        print(dictionary)
         for definition in definitions:
             for k, v in definition.items():
                 print(v.decode('utf-8', errors='ignore'))

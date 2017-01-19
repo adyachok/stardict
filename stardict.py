@@ -4,6 +4,7 @@ import struct
 import gzip
 import os
 from dictutils import find_dictionary_filepaths
+from collections import OrderedDict
 
 
 class IfoFileException(Exception):
@@ -405,22 +406,20 @@ class Stardict():
 
         return dict(name=dictionary_name, ifo=ifo_reader, idx=idx_reader, dict=dict_reader, syn=syn_reader)
 
-    def get_definitions_from_all_dictionaries(self, word_str):
-        definitions = {}
-        for dictionary_reader in self._dictionary_readers.values():
-            dictionary_definitions = self._get_definitions(
-                word_str, dictionary_reader)
-            definitions[dictionary_reader['name']] = dictionary_definitions
-        return definitions
+    def get_definitions_from_enabled_dictionaries(self,word_str, text_capture_mode=False):
+        if text_capture_mode:
+            dictionaries=self.settings.enabled_dictionaries_in_text_capture_mode
+        else:
+            dictionaries=self.settings.enabled_dictionaries_in_normal_mode
+        
+        enabled_dictionaries_definitions=OrderedDict()
+        for dictionary in dictionaries:
+            definitions = self.get_definitions_from_one_dictionary( word_str, dictionary)
+            enabled_dictionaries_definitions[dictionary]=definitions
+        return enabled_dictionaries_definitions
 
-    def get_definitions_from_one_dictionary(self, word_str, dictionary_name):
-        if not (dictionary_name in self._dictionary_readers):
-            return None
-        dictionary_reader = self._dictionary_readers[dictionary_name]
-        definitons = self._get_definitions(word_str, dictionary_reader)
-        return definitons
-
-    def _get_definitions(self, word_str, dictionary_reader):
+    def get_definitions_from_one_dictionary(self, word_str, dictionary):
+        dictionary_reader = self._dictionary_readers[dictionary]
         dict_reader = dictionary_reader['dict']
         definitions = dict_reader.get_dict_by_word(word_str)
 
@@ -440,11 +439,12 @@ class Stardict():
 
     def _build_search_index(self):
         search_index = set()
-        dictionaries = self.settings.find_enabled_dictionaries_in_index_group()
+        dictionaries = self.settings.enabled_dictionaries_in_index_group
         for dictionary in dictionaries:
             dictionary_reader = self._dictionary_readers[dictionary]
             words = dictionary_reader['idx'].get_all_words()
             search_index = search_index.union(words)
+        self.search_index = sorted(search_index)
 
 
 class DictionarySettings():
@@ -496,21 +496,16 @@ class DictionarySettings():
         self.index_group_settings = self._get_index_group_settings()
         self.text_capture_group_settings = self._get_text_capture_group_settings()
 
+        self.enabled_dictionaries_in_normal_mode=[setting[0] for setting in self.installed_dictionaries_settings if setting[1]!='0']
+        self.enabled_dictionaries_in_index_group=[setting[0] for setting in self.index_group_settings if setting[1]!='0']
+        self.enabled_dictionaries_in_text_capture_mode=[setting[0] for setting in self.text_capture_group_settings if setting[1]!='0']
+
     def find_enabled_dictionaries(self):
         enabled_dictionaries = set()
-        for setting in self.installed_dictionaries_settings:
-            if setting[1]:
-                enabled_dictionaries.add(setting[0])
-        for setting in self.index_group_settings:
-            if setting[1]:
-                enabled_dictionaries.add(setting[0])
-        for setting in self.text_capture_group_settings:
-            if setting[1]:
-                enabled_dictionaries.add(setting[0])
+        enabled_dictionaries=enabled_dictionaries.union(self.enabled_dictionaries_in_normal_mode)
+        enabled_dictionaries=enabled_dictionaries.union(self.enabled_dictionaries_in_index_group)
+        enabled_dictionaries=enabled_dictionaries.union(self.enabled_dictionaries_in_text_capture_mode)
         return list(enabled_dictionaries)
-
-    def find_enabled_dictionaries_in_index_group(self):
-        return [setting[0] for setting in self.index_group_settings if setting[1]]
 
     def install_dictionary(self, dictionary_path):
         filepaths = find_dictionary_filepaths(dictionary_path)
