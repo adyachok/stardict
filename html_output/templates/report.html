@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {
+                background-color: rgba(128, 128, 128, 0.12);
+            }
+            .header {
+                margin: 0.3em 0 0 0;
+            }
+            .word-container {
+                border: 1px dashed darkgray;
+                border-radius: 1.3em;
+                padding: 0.4em;
+                padding-left: 2em;
+                margin-bottom: 0.5em;
+                background-color: white;
+            }
+            .definition {
+                background-color: lightgoldenrodyellow;
+                padding: 1em;
+                border-radius: 0.5em;
+            }
+            .explanation {
+                background-color: lightcyan;
+                padding: 2em;
+            }
+        </style>
+    </head>
+    <body>
+        {% for i in text %}
+        <div class="word-container">
+            {% if i|length > 1 %}
+                <h3 class="header">{{ i[0] | safe }}</h3>
+                <p class="definition">{{ i[1] | safe }}</p>
+            {% else %}
+                <p class="explanation">{{ i[0] | safe }}</p>>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </body>
+</html>
